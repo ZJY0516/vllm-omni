@@ -703,6 +703,7 @@ class Omni(OmniBase):
                         f"[{self._name}] Stage {stage_id} error on request {req_id}: {result['error']}",
                     )
                     continue
+
                 if result.get("type") == "stage_ready":
                     # Only happens when stage is initialized slower than expected,
                     # so we wait for a short time and try again
