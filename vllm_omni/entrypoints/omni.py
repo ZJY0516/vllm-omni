@@ -570,6 +570,7 @@ class Omni(OmniBase):
                 return self._run_generation_with_generator(prompts, sampling_params_list)
             else:
                 outputs = list(self._run_generation(prompts, sampling_params_list))
+                # self.close()
                 return outputs
         except Exception as e:
             logger.exception("[Orchestrator] Failed to run generation: %s", e)

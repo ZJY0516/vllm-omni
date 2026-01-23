@@ -43,8 +43,11 @@ def test_cpu_offload_diffusion_model(model_name: str):
 
         return peak
 
-    offload_peak_memory = inference(offload=True)
-    no_offload_peak_memory = inference(offload=False)
+    try:
+        offload_peak_memory = inference(offload=True)
+        no_offload_peak_memory = inference(offload=False)
+    except Exception:
+        pytest.fail("Inference failed")
     print(f"Offload peak memory: {offload_peak_memory} MB")
     print(f"No offload peak memory: {no_offload_peak_memory} MB")
     assert offload_peak_memory + 2500 < no_offload_peak_memory, (
