@@ -699,10 +699,7 @@ class Omni(OmniBase):
                 made_progress = True
                 req_id = result.get("request_id")
                 if "error" in result:
-                    logger.error(
-                        f"[{self._name}] Stage {stage_id} error on request {req_id}: {result['error']}",
-                    )
-                    continue
+                    raise Exception(f"Stage {stage_id} error on request {req_id}: {result['error']}")
 
                 if result.get("type") == "stage_ready":
                     # Only happens when stage is initialized slower than expected,
