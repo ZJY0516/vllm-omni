@@ -470,9 +470,6 @@ class OmniBase:
     def is_async(self) -> bool:
         return False
 
-    def __del__(self) -> None:
-        self.close()
-
 
 class Omni(OmniBase):
     """Unified entrypoint for both LLM and Diffusion models for better usability.
@@ -573,7 +570,6 @@ class Omni(OmniBase):
                 return self._run_generation_with_generator(prompts, sampling_params_list)
             else:
                 outputs = list(self._run_generation(prompts, sampling_params_list))
-                # self.close()
                 return outputs
         except Exception as e:
             logger.exception("[Orchestrator] Failed to run generation: %s", e)
