@@ -91,15 +91,15 @@ class DiffusionEngine:
                 )
             return None
 
-            postprocess_start_time = time.time()
-            outputs = self.post_process_func(output.output) if self.post_process_func is not None else output.output
-            postprocess_time = time.time() - postprocess_start_time
-            logger.info(f"Post-processing completed in {postprocess_time:.4f} seconds")
+        postprocess_start_time = time.time()
+        outputs = self.post_process_func(output.output) if self.post_process_func is not None else output.output
+        postprocess_time = time.time() - postprocess_start_time
+        logger.info(f"Post-processing completed in {postprocess_time:.4f} seconds")
 
-            # Convert to OmniRequestOutput format
-            # Ensure outputs is a list
-            if not isinstance(outputs, list):
-                outputs = [outputs] if outputs is not None else []
+        # Convert to OmniRequestOutput format
+        # Ensure outputs is a list
+        if not isinstance(outputs, list):
+            outputs = [outputs] if outputs is not None else []
 
         # Handle single request or multiple requests
         if len(requests) == 1:
