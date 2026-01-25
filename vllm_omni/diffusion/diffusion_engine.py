@@ -114,30 +114,30 @@ class DiffusionEngine:
             if output.trajectory_timesteps is not None:
                 metrics["trajectory_timesteps"] = output.trajectory_timesteps
 
-                if supports_audio_output(self.od_config.model_class_name):
-                    audio_payload = outputs[0] if len(outputs) == 1 else outputs
-                    return OmniRequestOutput.from_diffusion(
-                        request_id=request_id,
-                        images=[],
-                        prompt=prompt,
-                        metrics=metrics,
-                        latents=output.trajectory_latents,
-                        multimodal_output={"audio": audio_payload},
-                        final_output_type="audio",
-                    )
-                else:
-                    return OmniRequestOutput.from_diffusion(
-                        request_id=request_id,
-                        images=outputs,
-                        prompt=prompt,
-                        metrics=metrics,
-                        latents=output.trajectory_latents,
-                    )
+            if supports_audio_output(self.od_config.model_class_name):
+                audio_payload = outputs[0] if len(outputs) == 1 else outputs
+                return OmniRequestOutput.from_diffusion(
+                    request_id=request_id,
+                    images=[],
+                    prompt=prompt,
+                    metrics=metrics,
+                    latents=output.trajectory_latents,
+                    multimodal_output={"audio": audio_payload},
+                    final_output_type="audio",
+                )
             else:
-                # Multiple requests: return list of OmniRequestOutput
-                # Split images based on num_outputs_per_prompt for each request
-                results = []
-                output_idx = 0
+                return OmniRequestOutput.from_diffusion(
+                    request_id=request_id,
+                    images=outputs,
+                    prompt=prompt,
+                    metrics=metrics,
+                    latents=output.trajectory_latents,
+                )
+        else:
+            # Multiple requests: return list of OmniRequestOutput
+            # Split images based on num_outputs_per_prompt for each request
+            results = []
+            output_idx = 0
 
             for request in requests:
                 request_id = request.request_id or ""
@@ -145,40 +145,38 @@ class DiffusionEngine:
                 if isinstance(prompt, list):
                     prompt = prompt[0] if prompt else None
 
-                    # Get images for this request
-                    num_outputs = request.num_outputs_per_prompt
-                    request_outputs = (
-                        outputs[output_idx : output_idx + num_outputs] if output_idx < len(outputs) else []
-                    )
-                    output_idx += num_outputs
+                # Get images for this request
+                num_outputs = request.num_outputs_per_prompt
+                request_outputs = outputs[output_idx : output_idx + num_outputs] if output_idx < len(outputs) else []
+                output_idx += num_outputs
 
                 metrics = {}
                 if output.trajectory_timesteps is not None:
                     metrics["trajectory_timesteps"] = output.trajectory_timesteps
 
-                    if supports_audio_output(self.od_config.model_class_name):
-                        audio_payload = request_outputs[0] if len(request_outputs) == 1 else request_outputs
-                        results.append(
-                            OmniRequestOutput.from_diffusion(
-                                request_id=request_id,
-                                images=[],
-                                prompt=prompt,
-                                metrics=metrics,
-                                latents=output.trajectory_latents,
-                                multimodal_output={"audio": audio_payload},
-                                final_output_type="audio",
-                            )
+                if supports_audio_output(self.od_config.model_class_name):
+                    audio_payload = request_outputs[0] if len(request_outputs) == 1 else request_outputs
+                    results.append(
+                        OmniRequestOutput.from_diffusion(
+                            request_id=request_id,
+                            images=[],
+                            prompt=prompt,
+                            metrics=metrics,
+                            latents=output.trajectory_latents,
+                            multimodal_output={"audio": audio_payload},
+                            final_output_type="audio",
                         )
-                    else:
-                        results.append(
-                            OmniRequestOutput.from_diffusion(
-                                request_id=request_id,
-                                images=request_outputs,
-                                prompt=prompt,
-                                metrics=metrics,
-                                latents=output.trajectory_latents,
-                            )
+                    )
+                else:
+                    results.append(
+                        OmniRequestOutput.from_diffusion(
+                            request_id=request_id,
+                            images=request_outputs,
+                            prompt=prompt,
+                            metrics=metrics,
+                            latents=output.trajectory_latents,
                         )
+                    )
 
             return results
 
