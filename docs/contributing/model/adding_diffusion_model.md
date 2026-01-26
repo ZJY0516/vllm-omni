@@ -133,6 +133,14 @@ _repeated_blocks = ["QwenImageTransformerBlock"]
 ```
 
 
+### 1.6 (Optional) implement sequence parallelism
+vLLM-Omni has a non-intrusive `_sp_plan` that enable sequence parallel without modifying `forward()` logic.
+You can refer to [How to parallelize a new model](user_guide/diffusion/parallelism_acceleration.md)
+
+
+### 1.7 (Optional) integrate with Cache-Dit
+vLLM-Omni supports acceleration via [Cache-Dit](user_guide/diffusion/cache_dit_acceleration.md). Most models compatible with Diffusers can use Cache-Dit seamlessly. For new models, you can extend support by modifying`cache_dit_backend.py`
+
 ## Step 2: Extend OmniDiffusionRequest Fields
 User-provided inputs are ultimately passed to the model’s forward method through OmniDiffusionRequest, so we add the required fields here to support the new model.
 ```python
@@ -195,15 +203,18 @@ Key point for writing the example:
 
 + Save or display the generated results so users can validate the integration.
 
-## (Optional) Step 5: Open a Pull Request
+## Step 5: Open a Pull Request
 
 When submitting a pull request to add support for a new model, please include the following information in the PR description:
 
-+ Provide example generation outputs to verify correctness and model behavior.
++ Provide generation outputs to verify correctness and model behavior.
 
 + Report inference speed, and include a comparison with the corresponding implementation in Diffusers.
 
 + Describe parallelism support, specify the supported parallel sizes and any relevant limitations.
+
++ Support for Cache-Dit: Confirm if the model can be accelerated using Cache-Dit.
+
 
 Providing these details helps reviewers evaluate correctness, performance improvements, and parallel scalability of the new model integration.
 
