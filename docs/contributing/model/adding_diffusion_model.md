@@ -77,7 +77,7 @@ prompt = req.prompt
 ```
 + pre/post-processing are handled by the framework elsewhere, so skip them.
 
-### 1.4 Replace some ops or layers in transformer component
+### 1.4 Replace some ops or layers in DiT component
 
 vLLM-Omni provides a set of optimized operators with better performance and built-in support for parallelism, including attention, rotary embeddings (RoPE), and linear layers.
 
@@ -122,6 +122,16 @@ In this example:
 + Linear layers are replaced with column- and row-parallel variants to enable tensor parallelism.
 
 + The FFN follows a standard two-layer structure and can be further optimized (e.g., using fused or merged projections) if needed.
+
+
+### 1.5 Provide a `_repeated_blocks` in DiT model
+`_repeated_blocks` is the small and frequently-repeated block(s) of a model -- typically a transformer layer.
+
+It's used for torch compile optimizations.
+```python
+_repeated_blocks = ["QwenImageTransformerBlock"]
+```
+
 
 ## Step 2: Extend OmniDiffusionRequest Fields
 User-provided inputs are ultimately passed to the model’s forward method through OmniDiffusionRequest, so we add the required fields here to support the new model.
