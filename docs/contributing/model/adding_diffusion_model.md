@@ -44,7 +44,7 @@ vllm_omni/
 
 # Step-by-step-implementation
 ## Step 1: Model Implementation
-The diffusion pipeline’s implementation follows **HuggingFace Diffusers**, and components that do not need modification can be imported directly.
+The diffusion pipeline’s implementation follows **HuggingFace Diffusers**.
 ### 1.1 Define the Pipeline Class
 Define the pipeline class, e.g., `QwenImageEditPipeline`, and initialize all required submodules, either from HuggingFace `diffusers` or custom implementations. In `QwenImageEditPipeline`, only `QwenImageTransformer2DModel` is re-implemented to support optimizations such as Ulysses-SP. When adding new models in the future, you can either reuse this re-implemented `QwenImageTransformer2DModel` or extend it as needed.
 
@@ -73,9 +73,55 @@ def get_qwen_image_edit_post_process_func(
 The forward function of `QwenImageEditPipeline` follows the HuggingFace `diffusers` design for the most part. The key differences are:
 + As described in the overview, arguments are passed through `OnniDiffusionRequest`, so we need to get user parameters from it accordingly.
 ```python
-prompt = req.prompt if req.prompt is not None else prompt
+prompt = req.prompt
 ```
 + pre/post-processing are handled by the framework elsewhere, so skip them.
+
+### 1.4 Replace some ops or layers in transformer component
+
+vLLM-Omni provides a set of optimized operators with better performance and built-in support for parallelism, including attention, rotary embeddings (RoPE), and linear layers.
+
+Below is an example showing how to replace standard Transformer attention and FFN layers with vLLM-Omni implementations:
+
+```python
+from vllm_omni.diffusion.attention.layer import Attention
+from vllm_omni.diffusion.layers.rope import RotaryEmbedding
+class MyAttention(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.attn = Attention()
+        self.to_qkv = QKVParallelLinear()
+        self.to_out = RowParallelLinear()
+        self.rope = RotaryEmbedding(is_neox_style=False)
+
+    def forward(self, hidden_states):
+        qkv, _ = self.to_qkv(hidden_states)
+        q, k, v = qkv.split(...)
+        q, k = self.rope(...)
+        attn_output = self.attn(q, k, v)
+        output = self.to_out(attn_output)
+
+class MyFFN(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.fc1 = ColumnParallelLinear()
+        self.fc2 = RowParallelLinear()
+        self.act = F.gelu
+
+    def forward(self, hidden_states):
+        hidden, _ = self.fc1(hidden_states)
+        hidden = self.act(hidden)
+        output = self.fc2(hidden)
+        return output
+```
+
+In this example:
+
++ Attention uses vLLM-Omni’s optimized attention kernel together with parallel QKV projection and RoPE.
+
++ Linear layers are replaced with column- and row-parallel variants to enable tensor parallelism.
+
++ The FFN follows a standard two-layer structure and can be further optimized (e.g., using fused or merged projections) if needed.
 
 ## Step 2: Extend OmniDiffusionRequest Fields
 User-provided inputs are ultimately passed to the model’s forward method through OmniDiffusionRequest, so we add the required fields here to support the new model.
@@ -138,6 +184,18 @@ Key point for writing the example:
     + optional acceleration backends (e.g., Cache-DiT, TeaCache)
 
 + Save or display the generated results so users can validate the integration.
+
+## (Optional) Step 5: Open a Pull Request
+
+When submitting a pull request to add support for a new model, please include the following information in the PR description:
+
++ Provide example generation outputs to verify correctness and model behavior.
+
++ Report inference speed, and include a comparison with the corresponding implementation in Diffusers.
+
++ Describe parallelism support, specify the supported parallel sizes and any relevant limitations.
+
+Providing these details helps reviewers evaluate correctness, performance improvements, and parallel scalability of the new model integration.
 
 # Testing
 For comprehensive testing guidelines, please refer to the [Test File Structure and Style Guide](../ci/tests_style.md).
