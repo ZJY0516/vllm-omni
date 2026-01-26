@@ -86,6 +86,7 @@ Below is an example showing how to replace standard Transformer attention and FF
 ```python
 from vllm_omni.diffusion.attention.layer import Attention
 from vllm_omni.diffusion.layers.rope import RotaryEmbedding
+
 class MyAttention(nn.Module):
     def __init__(self):
         super().__init__()
