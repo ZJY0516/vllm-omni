@@ -208,13 +208,13 @@ Key point for writing the example:
 
 When submitting a pull request to add support for a new model, please include the following information in the PR description:
 
-+ Provide generation outputs to verify correctness and model behavior.
++ Output verification: provide generation outputs to verify correctness and model behavior.
 
-+ Report inference speed, and include a comparison with the corresponding implementation in Diffusers.
++ Inference speed: provide a comparison with the corresponding implementation in Diffusers.
 
-+ Describe parallelism support, specify the supported parallel sizes and any relevant limitations.
++ Parallelism support: specify the supported parallel sizes and any relevant limitations.
 
-+ Support for Cache-Dit: Confirm if the model can be accelerated using Cache-Dit.
++ Cache acceleration: check whether the model can be accelerated using Cache-Dit or not.
 
 
 Providing these details helps reviewers evaluate correctness, performance improvements, and parallel scalability of the new model integration.
