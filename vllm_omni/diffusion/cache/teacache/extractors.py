@@ -249,6 +249,7 @@ def extract_qwen_context(
                 temb=temb,
                 image_rotary_emb=image_rotary_emb,
                 joint_attention_kwargs=attention_kwargs,
+                hidden_states_mask=hidden_states_mask,
             )
         return (h, e)
 
