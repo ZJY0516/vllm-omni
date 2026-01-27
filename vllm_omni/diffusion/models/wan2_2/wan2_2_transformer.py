@@ -606,7 +606,6 @@ class WanTransformer3DModel(nn.Module):
 
         # 1. Patch & position embedding
         self.rope = WanRotaryPosEmbed(attention_head_dim, patch_size, rope_max_seq_len)
-        # self.patch_embedding = nn.Conv3d(in_channels, inner_dim, kernel_size=patch_size, stride=patch_size)
         self.patch_embedding = Conv3dLayer(
             in_channels=in_channels,
             out_channels=inner_dim,
