@@ -129,14 +129,6 @@ def client(omni_server):
     )
 
 
-@pytest.fixture
-def t2i_server(request):
-    """Start vLLM-Omni server for text-to-image model."""
-    model = request.param
-    with OmniServer(model, ["--num-gpus", "1"]) as server:
-        yield server
-
-
 @pytest.fixture(scope="session")
 def base64_encoded_images() -> list[str]:
     """Base64 encoded PNG images for testing."""
@@ -239,10 +231,10 @@ def test_i2i_multi_image_input_qwen_image_edit_2509(
     # assert (1024, 768) in results
 
 
-@pytest.mark.parametrize("t2i_server", t2i_models, indirect=True)
-def test_t2i_concurrent_requests_different_sizes(t2i_server) -> None:
+@pytest.mark.parametrize("omni_server", t2i_models, indirect=True)
+def test_t2i_concurrent_requests_different_sizes(omni_server) -> None:
     """Test /v1/images/generations concurrent requests with different sizes."""
-    base_url = f"http://{t2i_server.host}:{t2i_server.port}"
+    base_url = f"http://{omni_server.host}:{omni_server.port}"
     url = f"{base_url}/v1/images/generations"
 
     barrier = threading.Barrier(2)
