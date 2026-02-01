@@ -998,6 +998,16 @@ def _stage_worker(
                         "error_tb": _tb,
                     }
                 )
+            if stage_type == "diffusion":
+                logger.critical(
+                    "[Stage-%s] Fatal diffusion error detected, shutting down stage: %s",
+                    stage_id,
+                    e,
+                )
+                try:
+                    stage_engine.shutdown()
+                finally:
+                    raise SystemExit(1)
 
 
 def _stage_worker_async_entry(
@@ -1405,6 +1415,16 @@ async def _stage_worker_async(
                     "error": str(e),
                 }
             )
+            if stage_type == "diffusion":
+                logger.critical(
+                    "[Stage-%s] Fatal diffusion error detected, shutting down stage: %s",
+                    stage_id,
+                    e,
+                )
+                try:
+                    stage_engine.shutdown()
+                finally:
+                    _os._exit(1)
 
     _batch_gen_t0 = _time.time()
     while True:
