@@ -490,7 +490,9 @@ class AsyncOmni(OmniBase):
                     f"[{self._name}] Exiting API process due to diffusion stage {stage_id} OOM.",
                 )
 
-                self.shutdown()
+                import os as _os
+
+                _os._exit(1)
 
     def _process_single_result(
         self,
