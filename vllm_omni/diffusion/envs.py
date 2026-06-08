@@ -25,6 +25,10 @@ environment_variables: dict[str, Callable[[], Any]] = {
     # local rank of the process in the distributed setting, used to determine
     # the GPU device id
     "LOCAL_RANK": lambda: int(os.environ.get("LOCAL_RANK", "0")),
+    # Fuse the Ulysses-SP Q/K/V exchange into a single stacked all-to-all (one
+    # NCCL collective instead of three) via SeqAllToAll5D. Reduces collective +
+    # launch count while staying on NCCL's comm stream. Default 0 (off).
+    "VLLM_OMNI_ULYSSES_FUSED_QKV": lambda: bool(int(os.getenv("VLLM_OMNI_ULYSSES_FUSED_QKV", "0"))),
 }
 
 

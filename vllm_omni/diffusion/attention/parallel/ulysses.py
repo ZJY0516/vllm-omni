@@ -9,11 +9,17 @@ import torch
 import torch.distributed as dist
 import torch.nn.functional as F
 
+from vllm_omni.diffusion import envs
 from vllm_omni.diffusion.attention.backends.abstract import AttentionMetadata
 from vllm_omni.diffusion.attention.parallel.base import ParallelAttentionContext
-from vllm_omni.diffusion.distributed.comm import SeqAllToAll4D
+from vllm_omni.diffusion.distributed.comm import SeqAllToAll4D, SeqAllToAll5D
 from vllm_omni.diffusion.distributed.group_coordinator import SequenceParallelGroupCoordinator
 from vllm_omni.diffusion.forward_context import get_ulysses_mode
+
+
+def _fused_qkv_enabled(scatter_idx: int, gather_idx: int, world_size: int) -> bool:
+    """Whether to fuse Q/K/V into one stacked all-to-all (strict layout only)."""
+    return envs.VLLM_OMNI_ULYSSES_FUSED_QKV and world_size > 1 and scatter_idx == 2 and gather_idx == 1
 
 
 def _ceil_div(n: int, d: int) -> int:
@@ -329,9 +335,21 @@ class UlyssesParallelAttention:
                     )
 
             # (bs, seq_len/P, head_cnt, head_size) -> (bs, seq_len, head_cnt/P, head_size)
-            query = SeqAllToAll4D.apply(self._ulysses_pg, query, self._scatter_idx, self._gather_idx, self._use_sync)
-            key = SeqAllToAll4D.apply(self._ulysses_pg, key, self._scatter_idx, self._gather_idx, self._use_sync)
-            value = SeqAllToAll4D.apply(self._ulysses_pg, value, self._scatter_idx, self._gather_idx, self._use_sync)
+            if _fused_qkv_enabled(self._scatter_idx, self._gather_idx, ulysses_world_size) and (
+                query.shape == key.shape == value.shape
+            ):
+                # One stacked all-to-all instead of three: (B, S/P, 3, H, D) -> (B, S, 3, H/P, D).
+                stacked = torch.stack([query, key, value], dim=2)
+                stacked = SeqAllToAll5D.apply(self._ulysses_pg, stacked, 3, 1, self._use_sync)
+                query, key, value = (t.contiguous() for t in stacked.unbind(dim=2))
+            else:
+                query = SeqAllToAll4D.apply(
+                    self._ulysses_pg, query, self._scatter_idx, self._gather_idx, self._use_sync
+                )
+                key = SeqAllToAll4D.apply(self._ulysses_pg, key, self._scatter_idx, self._gather_idx, self._use_sync)
+                value = SeqAllToAll4D.apply(
+                    self._ulysses_pg, value, self._scatter_idx, self._gather_idx, self._use_sync
+                )
             seq_lens = []
             local_seq_len = 0
             orig_head_cnt = 0
